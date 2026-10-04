@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Crab News — Preview Dashboard</title>
+<style>
+:root{--bg:#f6f5f2;--card:#fff;--tx:#1d1d1b;--mut:#6b6a66;--bd:#e4e2dc;--ac:#d9480f;--ac2:#fff1e8;--ok:#2b8a3e;--okb:#e6f4ea;--wr:#b7791f;--wrb:#fdf3dc;--er:#c92a2a;--erb:#fde8e8;--ad:#5b4bd5;--adb:#ecebfb;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#171716;--card:#222220;--tx:#eeede8;--mut:#9b9a94;--bd:#363632;--ac:#ff8a4c;--ac2:#3a2a20;--ok:#69db7c;--okb:#1f3324;--wr:#f2c14e;--wrb:#3a3220;--er:#ff8787;--erb:#3b2222;--ad:#9d92ff;--adb:#2a2745}}
+:root[data-theme="dark"]{--bg:#171716;--card:#222220;--tx:#eeede8;--mut:#9b9a94;--bd:#363632;--ac:#ff8a4c;--ac2:#3a2a20;--ok:#69db7c;--okb:#1f3324;--wr:#f2c14e;--wrb:#3a3220;--er:#ff8787;--erb:#3b2222;--ad:#9d92ff;--adb:#2a2745}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:1100px;margin:0 auto;padding:16px}
+header{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-bottom:12px}
+h1{font-size:20px;margin:0}h1 span{color:var(--ac)}
+.sub{color:var(--mut);font-size:12px}
+nav{display:flex;gap:6px;overflow-x:auto;margin-bottom:14px;padding-bottom:4px}
+nav button{border:1px solid var(--bd);background:var(--card);color:var(--tx);padding:7px 12px;border-radius:999px;cursor:pointer;white-space:nowrap;font:inherit}
+nav button.on{background:var(--ac);border-color:var(--ac);color:#fff}
+.legend{display:flex;gap:10px;font-size:12px;color:var(--mut);margin-bottom:12px;flex-wrap:wrap}
+.grid{display:grid;gap:12px}
+.g4{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.g2{grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px;min-width:0}
+.card h3{font-size:14px;margin:0 0 10px;display:flex;justify-content:space-between;gap:8px;align-items:center}
+.tag{font-size:10px;padding:2px 7px;border-radius:999px;font-weight:600;white-space:nowrap}
+.pl{background:var(--okb);color:var(--ok)}.ad{background:var(--adb);color:var(--ad)}
+.kpi .v{font-size:24px;font-weight:700}.kpi .l{color:var(--mut);font-size:12px}.kpi .d{font-size:12px}
+.up{color:var(--ok)}.dn{color:var(--er)}
+.row{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:13px}
+.row .n{width:90px;flex:none;overflow:hidden;text-overflow:ellipsis}
+.bar{flex:1;height:10px;background:var(--bd);border-radius:5px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--ac);border-radius:5px}
+.row .c{width:56px;text-align:right;color:var(--mut);flex:none}
+.chart{display:flex;align-items:flex-end;gap:4px;height:130px;padding-top:8px}
+.chart div{flex:1;background:var(--ac);border-radius:4px 4px 0 0;position:relative;min-width:6px}
+.chart div:hover::after{content:attr(data-t);position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background:var(--tx);color:var(--bg);padding:2px 6px;border-radius:4px;font-size:11px;white-space:nowrap}
+.xl{display:flex;gap:4px;font-size:10px;color:var(--mut)}.xl span{flex:1;text-align:center}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--bd);white-space:nowrap}
+th{color:var(--mut);font-weight:600;font-size:12px}
+.b{padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600}
+.s-success,.s-processed{background:var(--okb);color:var(--ok)}.s-partial,.s-pending{background:var(--wrb);color:var(--wr)}.s-failed{background:var(--erb);color:var(--er)}
+.art{padding:8px 0;border-bottom:1px solid var(--bd)}.art:last-child{border:0}
+.art a{color:var(--tx);font-weight:600;text-decoration:none}.art .m{color:var(--mut);font-size:12px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}.chip{background:var(--ac2);color:var(--ac);padding:3px 9px;border-radius:999px;font-size:12px}
+.heat{display:grid;grid-template-columns:repeat(24,1fr);gap:2px}.heat i{aspect-ratio:1;border-radius:3px;background:var(--ac)}
+.stack{display:flex;height:14px;border-radius:7px;overflow:hidden;margin:4px 0}
+.sel{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.sel select,.sel input{padding:6px 8px;border:1px solid var(--bd);border-radius:8px;background:var(--card);color:var(--tx);font:inherit}
+.pg{display:none}.pg.on{display:block}
+.note{font-size:12px;color:var(--mut);margin-top:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div><h1>🦀 Crab <span>News</span></h1><div class="sub">Preview dashboard · data contoh (dummy), bukan data asli</div></div>
+  <div class="sub">Terakhir crawl: 04 Okt 2026, 06:12 WIB</div>
+</header>
+<nav id="nav"></nav>
+<div class="legend"><span><span class="tag pl">Planning</span> sudah ada di dokumen</span><span><span class="tag ad">Tambahan</span> usulan data baru dari alur pipeline</span></div>
+
+<!-- DASHBOARD -->
+<section class="pg on" id="p0">
+  <div class="grid g4" id="kpi"></div>
+  <div class="grid g2" style="margin-top:12px">
+    <div class="card"><h3>Top Keywords Hari Ini <span class="tag pl">Planning</span></h3><div id="topkw"></div></div>
+    <div class="card"><h3>Trending Keywords (growth vs kemarin) <span class="tag pl">Planning</span></h3><div id="trend"></div></div>
+    <div class="card"><h3>Artikel per Hari (14 hari) <span class="tag pl">Planning</span></h3><div class="chart" id="perday"></div><div class="xl" id="perdayx"></div></div>
+    <div class="card"><h3>Artikel per Sumber <span class="tag pl">Planning</span></h3><div id="persrc"></div></div>
+    <div class="card"><h3>Distribusi Topik Hari Ini <span class="tag ad">Tambahan</span></h3><div id="topics"></div></div>
+    <div class="card"><h3>Sentimen Berita <span class="tag ad">Tambahan</span></h3><div id="sent"></div><div class="note">Estimasi analitis, bukan fakta objektif.</div></div>
+  </div>
+  <div class="card" style="margin-top:12px"><h3>Artikel Terbaru <span class="tag pl">Planning</span></h3><div id="latest"></div></div>
+</section>
+
+<!-- KEYWORDS -->
+<section class="pg" id="p1">
+  <div class="card"><h3>Keyword Explorer <span class="tag pl">Planning</span></h3>
+    <div class="sel"><select id="ksrc"></select><input id="kq" placeholder="Cari kata…"></div>
+    <div class="tw"><table><thead><tr><th>#</th><th>Kata</th><th>Frekuensi</th><th>Artikel</th><th>Growth</th><th>7 hari</th><th>Topik</th></tr></thead><tbody id="ktb"></tbody></table></div>
+    <div class="note">Frekuensi = total kemunculan · Artikel = jumlah artikel berbeda yang memuat kata (dari <code>daily_keywords</code>). Kolom Topik adalah tambahan.</div>
+  </div>
+  <div class="grid g2" style="margin-top:12px">
+    <div class="card"><h3>Keyword Co-occurrence: “nuklir” <span class="tag pl">Planning (fase lanjut)</span></h3><div id="co"></div></div>
+    <div class="card"><h3>Kata Baru Muncul (new words) <span class="tag ad">Tambahan</span></h3><div class="chips" id="newkw"></div><div class="note">Kata yang belum pernah muncul 30 hari terakhir.</div>
+      <h3 style="margin-top:14px">Kata Mulai Meredup <span class="tag ad">Tambahan</span></h3><div class="chips" id="fadekw"></div></div>
+  </div>
+</section>
+
+<!-- SOURCES -->
+<section class="pg" id="p2">
+  <div class="card"><h3>Perbandingan Sumber <span class="tag pl">Planning</span></h3>
+    <div class="tw"><table><thead><tr><th>Sumber</th><th>Tipe</th><th>Artikel 30h</th><th>Rata/hari</th><th>Duplikat</th><th>Gagal</th><th>Top kata</th></tr></thead><tbody id="stb"></tbody></table></div></div>
+  <div class="grid g2" style="margin-top:12px">
+    <div class="card"><h3>Kemiripan Keyword Antar Sumber <span class="tag ad">Tambahan</span></h3><div id="sim"></div><div class="note">Overlap top-50 kata (Jaccard).</div></div>
+    <div class="card"><h3>Jam Publikasi per Sumber <span class="tag ad">Tambahan</span></h3><div id="heat"></div><div class="note">Makin pekat = makin banyak artikel terbit pada jam tsb (00–23).</div></div>
+    <div class="card"><h3>Rata-rata Panjang Artikel <span class="tag ad">Tambahan</span></h3><div id="len"></div></div>
+    <div class="card"><h3>Jeda Publish → Crawl <span class="tag ad">Tambahan</span></h3><div id="lag"></div><div class="note">Selisih <code>published_at</code> dan <code>crawled_at</code>.</div></div>
+  </div>
+</section>
+
+<!-- ARTICLES -->
+<section class="pg" id="p3">
+  <div class="card"><h3>Article Explorer <span class="tag pl">Planning</span></h3>
+    <div class="sel"><select id="asrc"></select><select id="ast"><option value="">Semua status</option><option>processed</option><option>pending</option><option>failed</option></select><input id="aq" placeholder="Cari judul…"></div>
+    <div class="tw"><table><thead><tr><th>Judul</th><th>Sumber</th><th>Terbit</th><th>Crawl</th><th>Status</th><th>Kata unik</th><th>Sentimen</th></tr></thead><tbody id="atb"></tbody></table></div>
+    <div class="note">Paginasi 20/halaman. Kolom “Kata unik” & “Sentimen” adalah tambahan; konten penuh tidak ditampilkan, hanya metadata + link asli.</div>
+  </div>
+  <div class="card" style="margin-top:12px"><h3>Artikel Serupa / Cluster Event <span class="tag ad">Tambahan</span></h3><div id="cluster"></div></div>
+</section>
+
+<!-- RUNS -->
+<section class="pg" id="p4">
+  <div class="grid g4" id="rkpi"></div>
+  <div class="card" style="margin-top:12px"><h3>Crawler Runs <span class="tag pl">Planning</span></h3>
+    <div class="tw"><table><thead><tr><th>Run</th><th>Tanggal</th><th>Sumber</th><th>Status</th><th>Ditemukan</th><th>Baru</th><th>Duplikat</th><th>Diproses</th><th>Gagal</th><th>Durasi</th></tr></thead><tbody id="rtb"></tbody></table></div></div>
+  <div class="grid g2" style="margin-top:12px">
+    <div class="card"><h3>Kategori Kegagalan <span class="tag pl">Planning</span></h3><div id="fail"></div></div>
+    <div class="card"><h3>Antrian Pemrosesan <span class="tag ad">Tambahan</span></h3><div id="queue"></div><div class="note">Artikel tersimpan namun belum diproses, siap <code>--retry-failed</code>.</div></div>
+  </div>
+</section>
+
+<!-- IDEAS -->
+<section class="pg" id="p5">
+  <div class="grid g2">
+    <div class="card"><h3>Named Entities Terpopuler <span class="tag pl">Planning (fase lanjut)</span></h3><div id="ent"></div></div>
+    <div class="card"><h3>Deteksi Anomali Volume <span class="tag ad">Tambahan</span></h3><div id="anom"></div></div>
+    <div class="card"><h3>Timeline Keyword <span class="tag ad">Tambahan</span></h3><div id="tl"></div></div>
+    <div class="card"><h3>Kesehatan Data <span class="tag ad">Tambahan</span></h3><div id="health"></div></div>
+  </div>
+</section>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const pages=['Dashboard','Keywords','Sumber','Artikel','Crawler Runs','Entitas & Insight'];
+const src=['Kompas','Detik','CNN Indonesia','Antara','Tempo'];
+const srcT=['rss','hybrid','rss','rss','html'];
+const kw=[['pemerintah',1840,612,.08,'Politik'],['presiden',1522,498,.21,'Politik'],['ekonomi',1310,455,.12,'Ekonomi'],['energi',1104,301,.64,'Energi'],['nuklir',902,188,1.35,'Energi'],['banjir',876,240,.95,'Lingkungan'],['harga',845,377,-.05,'Ekonomi'],['kesehatan',790,262,.03,'Kesehatan'],['digital',712,214,.27,'Teknologi'],['pertandingan',690,173,-.18,'Olahraga'],['investasi',655,198,.1,'Ekonomi'],['pemilu',601,166,-.22,'Politik']];
+const spark=()=>{let a=[],v=20+Math.random()*10;for(let i=0;i<7;i++){v+=Math.random()*10-4;a.push(Math.max(4,v))}return a};
+const sp=a=>{const m=Math.max(...a);return `<svg width="70" height="22" viewBox="0 0 70 22"><polyline fill="none" stroke="var(--ac)" stroke-width="2" points="${a.map((v,i)=>`${i*11.6},${21-v/m*19}`).join(' ')}"/></svg>`};
+const bars=(rows,max,fmt=v=>v)=>rows.map(r=>`<div class="row"><span class="n">${r[0]}</span><span class="bar"><i style="width:${r[1]/max*100}%"></i></span><span class="c">${fmt(r[1])}</span></div>`).join('');
+const pct=v=>`<span class="${v>=0?'up':'dn'}">${v>=0?'▲':'▼'} ${Math.abs(Math.round(v*100))}%</span>`;
+const st=s=>`<span class="b s-${s}">${s}</span>`;
+
+// nav
+pages.forEach((p,i)=>{const b=document.createElement('button');b.textContent=p;if(!i)b.className='on';b.onclick=()=>{document.querySelectorAll('.pg').forEach((e,j)=>e.classList.toggle('on',i==j));[...$('nav').children].forEach((c,j)=>c.classList.toggle('on',i==j))};$('nav').appendChild(b)});
+
+// KPI
+const K=(l,v,d,t)=>`<div class="card kpi"><div class="l">${l} <span class="tag ${t=='p'?'pl':'ad'}">${t=='p'?'Planning':'Tambahan'}</span></div><div class="v">${v}</div><div class="d">${d}</div></div>`;
+$('kpi').innerHTML=K('Total Artikel','128.430','<span class="up">▲ 1.204 hari ini</span>','p')+K('Sumber Aktif','5 / 6','1 nonaktif (Tempo-html)','p')+K('Crawl Terakhir','06:12','Status: <span class="up">success</span>','p')+K('Status Proses','98,4%','processed · 19 pending · 4 failed','p')+K('Kata Unik Hari Ini','8.912','<span class="up">▲ 3% vs kemarin</span>','a')+K('Rasio Duplikat','14%','173 dari 1.377 ditemukan','a')+K('Success Rate Run (30h)','93%','28 sukses · 2 partial','a')+K('Total Kata Dianalisis','4,2 jt','dari 128 rb artikel','a');
+$('topkw').innerHTML=bars(kw.slice(0,8).map(k=>[k[0],k[1]]),kw[0][1]);
+$('trend').innerHTML=[...kw].sort((a,b)=>b[3]-a[3]).slice(0,6).map(k=>`<div class="row"><span class="n">${k[0]}</span><span class="bar"><i style="width:${Math.min(100,k[3]*60)}%;background:var(--ok)"></i></span><span class="c" style="width:64px">${pct(k[3])}</span></div>`).join('')+'<div class="note">growth = (sekarang − sebelum) / max(sebelum, 1)</div>';
+const pd=[890,940,1010,870,520,480,950,1120,1180,1090,1204,610,560,1204];
+$('perday').innerHTML=pd.map((v,i)=>`<div data-t="${v} artikel" style="height:${v/1250*100}%"></div>`).join('');
+$('perdayx').innerHTML=pd.map((v,i)=>`<span>${(i+21)%30+1}</span>`).join('');
+const ps=[['Kompas',340],['Detik',312],['CNN Indonesia',248],['Antara',196],['Tempo',108]];
+$('persrc').innerHTML=bars(ps,340);
+$('topics').innerHTML=bars([['Politik',310],['Ekonomi',264],['Olahraga',188],['Teknologi',121],['Kesehatan',96],['Energi',84],['Lingkungan',72]],310);
+$('sent').innerHTML=`<div class="stack"><i style="width:28%;background:var(--ok)"></i><i style="width:49%;background:var(--bd)"></i><i style="width:23%;background:var(--er)"></i></div><div class="sub">Positif 28% · Netral 49% · Negatif 23%</div><div style="margin-top:10px">`+bars([['Kompas',.31],['Detik',.22],['CNN',.18],['Antara',.38],['Tempo',.14]],.4,v=>Math.round(v*100)+'% +')+`</div>`;
+
+// articles data
+const titles=['Pemerintah umumkan paket kebijakan energi baru','Harga pangan naik di sejumlah daerah','Banjir rendam ribuan rumah di pesisir utara','Menteri bahas rencana pembangkit nuklir pertama','Timnas siap hadapi laga kualifikasi','Startup digital raih pendanaan seri B','Kemenkes perluas program skrining nasional','Rupiah menguat tipis di akhir pekan','Presiden tinjau proyek infrastruktur baru','Investasi asing semester ini tumbuh'];
+const A=titles.map((t,i)=>({t,s:src[i%5],p:`0${(i%9)+1}:${10+i*4} WIB`,c:'06:12',st:i==3?'pending':i==8?'failed':'processed',w:60+i*13,se:['+','0','−'][i%3]}));
+$('latest').innerHTML=A.slice(0,6).map(a=>`<div class="art"><a href="#">${a.t}</a><div class="m">${a.s} · terbit ${a.p} · crawl ${a.c} · <a href="#" style="font-weight:400;color:var(--ac)">sumber asli ↗</a></div></div>`).join('');
+
+// keywords page
+const opt=(id,arr,all)=>$(id).innerHTML=`<option value="">${all}</option>`+arr.map(s=>`<option>${s}</option>`).join('');
+opt('ksrc',src,'Semua sumber');opt('asrc',src,'Semua sumber');
+function rk(){const q=$('kq').value.toLowerCase();$('ktb').innerHTML=kw.filter(k=>k[0].includes(q)).map((k,i)=>`<tr><td>${i+1}</td><td><b>${k[0]}</b></td><td>${k[1].toLocaleString('id')}</td><td>${k[2]}</td><td>${pct(k[3])}</td><td>${sp(spark())}</td><td><span class="chip">${k[4]}</span></td></tr>`).join('')}
+$('kq').oninput=rk;$('ksrc').onchange=rk;rk();
+$('co').innerHTML=bars([['reactor',74],['energi',68],['uranium',41],['safety',33],['listrik',29]],74,v=>v+'×');
+$('newkw').innerHTML=['gelombang panas','kuota haji','ibu kota baru','pemadaman','satelit'].map(w=>`<span class="chip">${w}</span>`).join('');
+$('fadekw').innerHTML=['pilkada','debat','kampanye','quick count'].map(w=>`<span class="chip" style="background:var(--erb);color:var(--er)">${w}</span>`).join('');
+
+// sources
+$('stb').innerHTML=src.map((s,i)=>`<tr><td><b>${s}</b></td><td>${srcT[i]}</td><td>${[9120,8800,6900,5400,3100][i].toLocaleString('id')}</td><td>${[304,293,230,180,103][i]}</td><td>${[12,15,13,18,9][i]}%</td><td>${[0.4,0.8,0.6,0.2,2.1][i]}%</td><td>${kw.slice(i,i+2).map(k=>k[0]).join(', ')}</td></tr>`).join('');
+$('sim').innerHTML=bars([['Kompas ↔ Detik',.62],['Kompas ↔ Antara',.58],['Detik ↔ CNN',.51],['CNN ↔ Tempo',.34],['Antara ↔ Tempo',.29]],.7,v=>Math.round(v*100)+'%');
+$('heat').innerHTML=src.slice(0,4).map((s,i)=>`<div class="sub" style="margin-top:6px">${s}</div><div class="heat">${Array.from({length:24},(_,h)=>`<i style="opacity:${(.12+.88*Math.max(0,Math.sin((h-5)/24*Math.PI*1.9+i*.3))).toFixed(2)}" title="${h}:00"></i>`).join('')}</div>`).join('');
+$('len').innerHTML=bars([['Tempo',640],['CNN Indonesia',410],['Kompas',390],['Antara',320],['Detik',280]],640,v=>v+' kata');
+$('lag').innerHTML=bars([['Antara',8],['Detik',12],['Kompas',15],['CNN Indonesia',21],['Tempo',44]],44,v=>v+' mnt');
+
+// articles
+function ra(){const q=$('aq').value.toLowerCase(),s=$('asrc').value,t=$('ast').value;$('atb').innerHTML=A.filter(a=>a.t.toLowerCase().includes(q)&&(!s||a.s==s)&&(!t||a.st==t)).map(a=>`<tr><td style="white-space:normal;min-width:220px"><a href="#" style="color:var(--tx)">${a.t}</a></td><td>${a.s}</td><td>${a.p}</td><td>${a.c}</td><td>${st(a.st)}</td><td>${a.w}</td><td>${a.se=='+'?'<span class="up">positif</span>':a.se=='−'?'<span class="dn">negatif</span>':'netral'}</td></tr>`).join('')}
+['aq','asrc','ast'].forEach(i=>$(i).oninput=ra);ra();
+$('cluster').innerHTML=[['Rencana pembangkit nuklir pertama',7,'Kompas, Detik, Antara, Tempo'],['Banjir pesisir utara',5,'Detik, CNN Indonesia, Antara'],['Kenaikan harga pangan',4,'Kompas, CNN Indonesia']].map(c=>`<div class="art"><b>${c[0]}</b> <span class="chip">${c[1]} artikel</span><div class="m">${c[2]}</div></div>`).join('');
+
+// runs
+$('rkpi').innerHTML=K('Run Hari Ini','5','5 sumber','p')+K('Sukses / Partial / Gagal','4 / 1 / 0','30 hari: 28 / 2 / 0','p')+K('Rata-rata Durasi','3m 42d','<span class="dn">▲ 12% vs minggu lalu</span>','a')+K('Artikel Pending','19','siap diproses ulang','a');
+const R=src.map((s,i)=>[1042+i,'04 Okt 2026',s,i==4?'partial':'success',[142,130,118,96,60][i],[48,41,37,30,19][i],[94,89,81,66,41][i],[48,41,37,30,15][i],[0,0,0,0,4][i],['3m 10d','2m 55d','3m 40d','2m 20d','6m 05d'][i]]);
+$('rtb').innerHTML=R.map(r=>`<tr>${r.map((c,i)=>`<td>${i==3?st(c):i==0?'#'+c:c}</td>`).join('')}</tr>`).join('');
+$('fail').innerHTML=bars([['extract_failed',2],['parse_failed',1],['nlp_failed',1],['database_failed',0],['unknown',0]],2);
+$('queue').innerHTML=bars([['pending',19],['failed',4],['processed (hari ini)',181]],181)+'<div class="note">Tombol di UI hanya menampilkan status; eksekusi tetap via GitHub Actions / CLI.</div>';
+
+// ideas
+$('ent').innerHTML=bars([['Presiden (jabatan)',212],['Kementerian ESDM',148],['Jakarta',139],['PLN',96],['Bank Indonesia',88],['Timnas Indonesia',71]],212);
+$('anom').innerHTML=`<div class="art"><b class="dn">⚠ Volume Tempo turun 62%</b><div class="m">03 Okt · 41 artikel vs rata-rata 108 → cek adapter / RSS</div></div><div class="art"><b class="up">▲ Lonjakan “banjir” +95%</b><div class="m">04 Okt · 876 kemunculan, 5 sumber</div></div><div class="art"><b>Duplikat Detik naik 15%</b><div class="m">Di atas ambang 10%</div></div>`;
+$('tl').innerHTML=`<div class="sel"><select><option>nuklir</option><option>banjir</option></select></div><div class="chart" style="height:90px">${[3,4,2,5,8,9,14,22,40,38,52,61,70,64].map(v=>`<div data-t="${v}" style="height:${v/70*100}%"></div>`).join('')}</div><div class="note">Frekuensi harian 14 hari terakhir.</div>`;
+$('health').innerHTML=bars([['Artikel tanpa konten',12],['Tanpa tanggal terbit',7],['Konten terlalu pendek',31],['URL redirect',18]],31)+'<div class="note">Membantu memantau kualitas ekstraksi tiap adapter.</div>';
+</script>
+</body>
+</html>
