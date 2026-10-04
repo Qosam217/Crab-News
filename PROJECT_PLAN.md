@@ -9,6 +9,57 @@
 
 ---
 
+## Daftar Isi
+- [1. Project Overview](#1-project-overview)
+- [2. Why "Crab News"](#2-why-crab-news)
+- [3. Main Objectives](#3-main-objectives)
+- [4. Finalized Architecture](#4-finalized-architecture)
+- [5. Runtime Responsibilities](#5-runtime-responsibilities)
+- [6. Data Pipeline](#6-data-pipeline)
+- [7. Database Design](#7-database-design)
+  - [7.1 sources](#71-sources)
+  - [7.2 articles](#72-articles)
+  - [7.3 article_words](#73-article_words)
+  - [7.4 daily_keywords](#74-daily_keywords)
+  - [7.5 crawl_runs](#75-crawl_runs)
+- [8. Constraints and Indexing](#8-constraints-and-indexing)
+- [9. Duplicate Detection](#9-duplicate-detection)
+- [10. Text Processing Pipeline](#10-text-processing-pipeline)
+- [11. Keyword Analysis](#11-keyword-analysis)
+- [12. Source Adapters](#12-source-adapters)
+- [13. Crawling Strategy](#13-crawling-strategy)
+- [14. Standalone Python CLI](#14-standalone-python-cli)
+- [15. Suggested Crawler Repository Structure](#15-suggested-crawler-repository-structure)
+- [16. Incremental Processing](#16-incremental-processing)
+- [17. Retry and Recovery Design](#17-retry-and-recovery-design)
+- [18. Backfill / Reprocessing](#18-backfill--reprocessing)
+- [19. GitHub Actions Workflow](#19-github-actions-workflow)
+- [20. Local Environment](#20-local-environment)
+- [21. Web Application Architecture](#21-web-application-architecture)
+- [22. Why Precomputed Data Is Preferred](#22-why-precomputed-data-is-preferred)
+- [23. Direct Supabase vs Next.js API](#23-direct-supabase-vs-nextjs-api)
+- [24. Pagination and Bounded Queries](#24-pagination-and-bounded-queries)
+- [25. Dashboard MVP](#25-dashboard-mvp)
+- [26. Potential Web Pages](#26-potential-web-pages)
+- [27. Crawler Monitoring Dashboard](#27-crawler-monitoring-dashboard)
+- [28. Future NLP Features](#28-future-nlp-features)
+- [29. Performance Strategy](#29-performance-strategy)
+- [30. Error Handling](#30-error-handling)
+- [31. Logging](#31-logging)
+- [32. Security](#32-security)
+- [33. Project Repository Structure](#33-project-repository-structure)
+- [34. Testing Strategy](#34-testing-strategy)
+- [35. Data Integrity](#35-data-integrity)
+- [36. Legal and Operational Considerations](#36-legal-and-operational-considerations)
+- [37. Development Roadmap](#37-development-roadmap)
+- [38. MVP Success Criteria](#38-mvp-success-criteria)
+- [39. Long-Term Vision](#39-long-term-vision)
+- [40. Final Architecture Summary](#40-final-architecture-summary)
+- [41. Initial Implementation Priority](#41-initial-implementation-priority)
+- [42. Final MVP Stack](#42-final-mvp-stack)
+
+---
+
 ## 1. Project Overview
 
 **Crab News** is a web application and data pipeline for collecting news articles from multiple sources, processing their text, generating analytical information, and displaying the results through a dashboard.
