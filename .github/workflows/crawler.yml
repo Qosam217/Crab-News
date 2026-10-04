@@ -1,0 +1,72 @@
+name: Crab News Crawler Runner
+
+on:
+  schedule:
+    # Runs daily at 00:00 UTC (07:00 WIB)
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+    inputs:
+      source_slug:
+        description: 'Specific source slug to crawl (leave blank for all sources)'
+        required: false
+        default: ''
+      limit:
+        description: 'Max articles per source'
+        required: false
+        default: '30'
+      dry_run:
+        description: 'Run in dry-run mode (no DB writes)'
+        type: boolean
+        required: false
+        default: false
+
+jobs:
+  run-crawler:
+    name: Execute News Crawler & Analysis Pipeline
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          cd crawler
+          uv sync
+
+      - name: Run Crawler CLI
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          LOG_LEVEL: INFO
+        run: |
+          cd crawler
+          ARGS="--all-sources"
+          if [ -n "${{ github.event.inputs.source_slug }}" ]; then
+            ARGS="--source ${{ github.event.inputs.source_slug }}"
+          fi
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            ARGS="$ARGS --dry-run"
+          fi
+          if [ -n "${{ github.event.inputs.limit }}" ]; then
+            ARGS="$ARGS --limit ${{ github.event.inputs.limit }}"
+          fi
+          
+          echo "Running: uv run python -m crab_news.cli $ARGS"
+          uv run python -m crab_news.cli $ARGS
+          
+          # Trigger daily keyword aggregation
+          if [ "${{ github.event.inputs.dry_run }}" != "true" ]; then
+            echo "Running daily keyword aggregation..."
+            uv run python -m crab_news.cli --aggregate
+          fi
