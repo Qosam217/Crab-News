@@ -1,6 +1,3 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import { Header } from "@/components/Header";
 import { StatsCard } from "@/components/StatsCard";
 import { TrendChart } from "@/components/TrendChart";
@@ -8,7 +5,6 @@ import { KeywordsBarChart } from "@/components/KeywordsBarChart";
 import { StatusBadge } from "@/components/StatusBadge";
 import { supabase } from "@/lib/supabase";
 import { formatDate, formatNumber } from "@/lib/utils";
-import { Article, DailyKeyword, CrawlRun } from "@/types/database";
 import {
   Newspaper,
   KeyRound,
@@ -19,89 +15,69 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
-export default function OverviewPage() {
-  const [loading, setLoading] = useState(true);
-  const [totalArticles, setTotalArticles] = useState(0);
-  const [totalKeywords, setTotalKeywords] = useState(0);
-  const [activeSourcesCount, setActiveSourcesCount] = useState(5);
-  const [recentArticles, setRecentArticles] = useState<Article[]>([]);
-  const [topKeywords, setTopKeywords] = useState<DailyKeyword[]>([]);
-  const [recentRuns, setRecentRuns] = useState<CrawlRun[]>([]);
+export const dynamic = "force-dynamic";
 
-  // Mock data for initial demo visualization
-  const trendHistory = [
-    { date: "30 Sep", articles: 120, words: 14500 },
-    { date: "01 Oct", articles: 165, words: 19800 },
-    { date: "02 Oct", articles: 140, words: 17200 },
-    { date: "03 Oct", articles: 190, words: 22400 },
-    { date: "04 Oct", articles: 215, words: 25100 },
-  ];
+export default async function OverviewPage() {
+  // 1. Fetch total articles count
+  const { count: totalArticles } = await supabase
+    .from("articles")
+    .select("*", { count: "exact", head: true });
 
-  async function fetchDashboardData() {
-    setLoading(true);
-    try {
-      // 1. Fetch total articles count
-      const { count: artCount } = await supabase
-        .from("articles")
-        .select("*", { count: "exact", head: true });
-      if (artCount !== null) setTotalArticles(artCount);
+  // 2. Fetch active sources count
+  const { count: activeSourcesCount } = await supabase
+    .from("sources")
+    .select("*", { count: "exact", head: true })
+    .eq("is_active", true);
 
-      // 2. Fetch recent articles
-      const { data: articles } = await supabase
-        .from("articles")
-        .select("*, sources(name, slug)")
-        .order("crawled_at", { ascending: false })
-        .limit(6);
-      if (articles) setRecentArticles(articles);
+  // 3. Fetch top keywords overall
+  const { data: topKeywordsData } = await supabase
+    .from("daily_keywords")
+    .select("*")
+    .order("frequency", { ascending: false })
+    .limit(10);
+  const topKeywords = topKeywordsData || [];
+  const totalKeywords = topKeywords.reduce((acc, k) => acc + (k.frequency || 0), 0);
 
-      // 3. Fetch top keywords today / overall
-      const { data: keywords } = await supabase
-        .from("daily_keywords")
-        .select("*")
-        .order("frequency", { ascending: false })
-        .limit(10);
-      if (keywords && keywords.length > 0) {
-        setTopKeywords(keywords);
-        setTotalKeywords(keywords.reduce((acc, k) => acc + k.frequency, 0));
-      } else {
-        // Sample fallback top keywords
-        setTopKeywords([
-          { id: 1, date: "2026-10-04", source_id: null, word: "ekonomi", frequency: 184, article_count: 32, created_at: "" },
-          { id: 2, date: "2026-10-04", source_id: null, word: "pemerintah", frequency: 156, article_count: 28, created_at: "" },
-          { id: 3, date: "2026-10-04", source_id: null, word: "presiden", frequency: 142, article_count: 25, created_at: "" },
-          { id: 4, date: "2026-10-04", source_id: null, word: "digital", frequency: 98, article_count: 18, created_at: "" },
-          { id: 5, date: "2026-10-04", source_id: null, word: "investasi", frequency: 89, article_count: 16, created_at: "" },
-          { id: 6, date: "2026-10-04", source_id: null, word: "teknologi", frequency: 75, article_count: 14, created_at: "" },
-        ]);
-        setTotalKeywords(744);
-      }
+  // 4. Fetch recent articles
+  const { data: articlesData } = await supabase
+    .from("articles")
+    .select("*, sources(name, slug)")
+    .order("crawled_at", { ascending: false })
+    .limit(6);
+  const recentArticles = articlesData || [];
 
-      // 4. Fetch recent crawl runs
-      const { data: runs } = await supabase
-        .from("crawl_runs")
-        .select("*, sources(name)")
-        .order("started_at", { ascending: false })
-        .limit(4);
-      if (runs) setRecentRuns(runs);
+  // 5. Fetch recent crawl runs
+  const { data: runsData } = await supabase
+    .from("crawl_runs")
+    .select("*, sources(name)")
+    .order("started_at", { ascending: false })
+    .limit(4);
+  const recentRuns = runsData || [];
 
-    } catch (e) {
-      console.warn("Supabase fetch fallback:", e);
-    } finally {
-      setLoading(false);
-    }
-  }
+  // 6. Fetch trend history from daily_keywords
+  const { data: trendData } = await supabase
+    .from("daily_keywords")
+    .select("date, frequency, article_count")
+    .order("date", { ascending: true })
+    .limit(50);
 
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
+  const dateMap = new Map<string, { date: string; articles: number; words: number }>();
+  (trendData || []).forEach((item) => {
+    const d = item.date;
+    const existing = dateMap.get(d) || { date: d, articles: 0, words: 0 };
+    existing.words += item.frequency || 0;
+    existing.articles = Math.max(existing.articles, item.article_count || 0);
+    dateMap.set(d, existing);
+  });
+  const trendHistory = Array.from(dateMap.values()).slice(-7);
+
+  const latestRunStatus = recentRuns[0]?.status || "operational";
 
   return (
     <div className="flex-1 pb-12">
       <Header
         title="Overview Intelligence"
         description="Ringkasan pemrosesan berita terkini dan dinamika topik media Indonesia"
-        onRefresh={fetchDashboardData}
-        isLoading={loading}
       />
 
       <div className="p-8 space-y-8 max-w-7xl mx-auto">
@@ -109,30 +85,29 @@ export default function OverviewPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
           <StatsCard
             title="Total Articles"
-            value={formatNumber(totalArticles > 0 ? totalArticles : 830)}
+            value={formatNumber(totalArticles ?? 0)}
             subtitle="Tersimpan di Supabase"
             icon={Newspaper}
             color="rose"
-            trend={{ value: "+12.5% hari ini", isPositive: true }}
           />
           <StatsCard
             title="Word Occurrences"
-            value={formatNumber(totalKeywords > 0 ? totalKeywords : 42190)}
-            subtitle="Token kata terproses"
+            value={formatNumber(totalKeywords)}
+            subtitle="Total frekuensi kata teratas"
             icon={KeyRound}
             color="amber"
           />
           <StatsCard
             title="Active Sources"
-            value={activeSourcesCount}
-            subtitle="Antara, CNN, Kompas, Detik, Tempo"
+            value={activeSourcesCount ?? 0}
+            subtitle="Portal berita aktif"
             icon={Globe2}
             color="emerald"
           />
           <StatsCard
             title="Crawler Status"
-            value="Operational"
-            subtitle="GitHub Actions Cron Active"
+            value={latestRunStatus === "success" ? "Operational" : latestRunStatus}
+            subtitle="GitHub Actions & Audit Log"
             icon={Activity}
             color="blue"
           />
@@ -231,7 +206,7 @@ export default function OverviewPage() {
                   ) : (
                     <tr>
                       <td colSpan={4} className="px-4 py-8 text-center text-slate-500 text-sm">
-                        Belum ada artikel. Jalankan crawler CLI untuk mengisi data.
+                        Belum ada artikel di database.
                       </td>
                     </tr>
                   )}
@@ -275,7 +250,7 @@ export default function OverviewPage() {
                   ))
                 ) : (
                   <div className="p-4 rounded-xl bg-slate-800/30 border border-slate-800 text-center text-slate-500 text-xs">
-                    Belum ada audit log crawl_runs.
+                    Belum ada audit log crawl_runs di database.
                   </div>
                 )}
               </div>
