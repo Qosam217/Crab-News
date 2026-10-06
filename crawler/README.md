@@ -10,6 +10,12 @@ cd crawler
 # Sinkronisasi environment
 uv sync
 
+# Sinkronisasi environment test
+uv sync --extra dev
+
+# Running tests
+uv run pytest
+
 # Menjalankan crawler seluruh sumber berita aktif
 uv run python -m crab_news.cli --all-sources
 

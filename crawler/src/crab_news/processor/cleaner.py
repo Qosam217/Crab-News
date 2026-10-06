@@ -17,6 +17,8 @@ def strip_html(raw_html: str) -> str:
 
     text = soup.get_text(separator=" ")
     text = html.unescape(text)
+    # Collapse multiple whitespaces
+    text = re.sub(r"\s+", " ", text).strip()
     return text
 
 
