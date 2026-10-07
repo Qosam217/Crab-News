@@ -6,6 +6,7 @@ Direktori ini berisi skema database PostgreSQL untuk platform **Crab News**.
 
 - `migrations/`: Skrip DDL untuk inisialisasi tabel, indeks, constraint, dan RLS policies.
   - `001_initial_schema.sql`: Skema utama tabel `sources`, `articles`, `article_words`, `daily_keywords`, dan `crawl_runs`.
+  - `002_fix_daily_keywords_unique.sql`: Perbaikan unique constraint `NULLS NOT DISTINCT` untuk `daily_keywords`.
 - `seed/`: Data awal untuk sumber berita.
   - `seed_sources.sql`: Seed untuk 5 sumber berita awal Indonesia (Antara, CNN Indonesia, Kompas, Detik, Tempo).
 
@@ -14,7 +15,8 @@ Direktori ini berisi skema database PostgreSQL untuk platform **Crab News**.
 1. Buka dashboard project Anda di [Supabase Dashboard](https://supabase.com/dashboard).
 2. Masuk ke menu **SQL Editor**.
 3. Buka dan salin isi file `migrations/001_initial_schema.sql`, lalu klik **Run**.
-4. Buka dan salin isi file `seed/seed_sources.sql`, lalu klik **Run**.
+4. Buka dan salin isi file `migrations/002_fix_daily_keywords_unique.sql` jika memperbarui database lama, lalu klik **Run**.
+5. Buka dan salin isi file `seed/seed_sources.sql`, lalu klik **Run**.
 
 ## 🔑 Kunci Akses (Security & RLS)
 

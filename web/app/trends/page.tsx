@@ -12,10 +12,11 @@ interface TrendItem {
 }
 
 export default async function TrendsPage() {
-  // 1. Fetch latest distinct dates from daily_keywords
+  // 1. Fetch latest distinct dates from daily_keywords (global aggregation)
   const { data: dateRows } = await supabase
     .from("daily_keywords")
     .select("date")
+    .is("source_id", null)
     .order("date", { ascending: false })
     .limit(200);
 
@@ -30,12 +31,14 @@ export default async function TrendsPage() {
     const { data: latestData } = await supabase
       .from("daily_keywords")
       .select("word, frequency")
-      .eq("date", latestDate);
+      .eq("date", latestDate)
+      .is("source_id", null);
 
     const { data: prevData } = await supabase
       .from("daily_keywords")
       .select("word, frequency")
-      .eq("date", prevDate);
+      .eq("date", prevDate)
+      .is("source_id", null);
 
     const prevMap = new Map<string, number>();
     (prevData || []).forEach((row) => {
@@ -78,6 +81,7 @@ export default async function TrendsPage() {
       .from("daily_keywords")
       .select("word, frequency")
       .eq("date", latestDate)
+      .is("source_id", null)
       .order("frequency", { ascending: false })
       .limit(20);
 

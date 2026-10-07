@@ -29,10 +29,11 @@ export default async function OverviewPage() {
     .select("*", { count: "exact", head: true })
     .eq("is_active", true);
 
-  // 3. Fetch top keywords overall
+  // 3. Fetch top keywords overall (global aggregation)
   const { data: topKeywordsData } = await supabase
     .from("daily_keywords")
     .select("*")
+    .is("source_id", null)
     .order("frequency", { ascending: false })
     .limit(10);
   const topKeywords = topKeywordsData || [];
@@ -54,10 +55,11 @@ export default async function OverviewPage() {
     .limit(4);
   const recentRuns = runsData || [];
 
-  // 6. Fetch trend history from daily_keywords
+  // 6. Fetch trend history from daily_keywords (global aggregation)
   const { data: trendData } = await supabase
     .from("daily_keywords")
     .select("date, frequency, article_count")
+    .is("source_id", null)
     .order("date", { ascending: true })
     .limit(50);
 
