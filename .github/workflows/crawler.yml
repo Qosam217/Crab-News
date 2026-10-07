@@ -2,8 +2,8 @@ name: Crab News Crawler Runner
 
 on:
   schedule:
-    # Runs daily at 00:00 UTC (07:00 WIB)
-    - cron: '0 0 * * *'
+    # Runs daily at 00:00 UTC (03:00 WIB)
+    - cron: '0 20 * * *'
   workflow_dispatch:
     inputs:
       source_slug:
