@@ -28,7 +28,16 @@ def fetch_and_parse_rss(rss_url: str) -> List[Dict[str, Any]]:
     if not rss_url:
         return []
 
-    headers = {"User-Agent": settings.user_agent}
+    headers = {
+        "User-Agent": settings.user_agent,
+        "Accept": (
+            "application/rss+xml, application/xml, "
+            "text/xml;q=0.9, */*;q=0.8"
+        ),
+        "Accept-Language": "id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7",
+        "Accept-Encoding": "gzip, deflate",
+        "Connection": "keep-alive"
+    }
     try:
         response = requests.get(
             rss_url,
