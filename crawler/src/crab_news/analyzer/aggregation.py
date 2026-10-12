@@ -45,13 +45,14 @@ def compute_daily_keywords(target_date: Optional[date] = None) -> List[DailyKeyw
         all_words = []
         for i in range(0, len(article_ids), chunk_size):
             chunk = article_ids[i : i + chunk_size]
-            words_res = (
+            words_query = (
                 client.table("article_words")
                 .select("article_id, word, frequency")
                 .in_("article_id", chunk)
-                .execute()
+                .order("article_id")
+                .order("word")
             )
-            all_words.extend(words_res.data)
+            all_words.extend(fetch_all_rows(words_query))
 
         # source_id -> word -> (total_freq, article_ids_set)
         source_aggregates: Dict[Optional[str], Dict[str, Dict]] = defaultdict(
@@ -91,3 +92,25 @@ def compute_daily_keywords(target_date: Optional[date] = None) -> List[DailyKeyw
     except Exception as e:
         logger.error(f"Failed to compute daily keywords for {target_date}: {e}")
         return []
+
+def fetch_all_rows(query, page_size: int = 1000) -> list:
+    """Fetch all rows using range-based pagination."""
+    rows = []
+    offset = 0
+
+    while True:
+        response = (
+            query
+            .range(offset, offset + page_size - 1)
+            .execute()
+        )
+
+        batch = response.data or []
+        rows.extend(batch)
+
+        if len(batch) < page_size:
+            break
+
+        offset += page_size
+
+    return rows
