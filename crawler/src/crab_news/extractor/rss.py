@@ -44,6 +44,13 @@ def fetch_and_parse_rss(rss_url: str) -> List[Dict[str, Any]]:
             headers=headers,
             timeout=settings.request_timeout_seconds,
         )
+        logger.info("[RSS DEBUG] URL=%s | HTTP=%s | Content-Type=%s",
+            response.url,
+            response.status_code,
+            response.headers.get("Content-Type"),
+        )
+        if response.status_code == 403:
+            logger.warning("[RSS DEBUG] CNN access denied; body preview=%r",response.text[:200])
         response.raise_for_status()
 
         feed = feedparser.parse(response.content)
