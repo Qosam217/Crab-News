@@ -63,10 +63,10 @@ export function KeywordsBarChart({ data }: KeywordsBarChartProps) {
               backgroundColor: "#0f172a",
               borderColor: "#334155",
               borderRadius: "8px",
-              color: "#f8fafc",
+              color: "#578ee8ff",
             }}
           />
-          <Bar dataKey="frequency" radius={[0, 4, 4, 0]} name="Frequency">
+          <Bar dataKey="frequency" radius={[0, 4, 4, 0]} name="frequency" fill="#8363cbff">
             {data.slice(0, 10).map((_, index) => (
               <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
             ))}

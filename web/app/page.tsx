@@ -14,6 +14,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import Link from "next/link";
+import { TrendChart2 } from "@/components/TrendChart2";
 
 export const dynamic = "force-dynamic";
 
@@ -56,22 +57,23 @@ export default async function OverviewPage() {
   const recentRuns = runsData || [];
 
   // 6. Fetch trend history from daily_keywords (global aggregation)
-  const { data: trendData } = await supabase
-    .from("daily_keywords")
-    .select("date, frequency, article_count")
-    .is("source_id", null)
-    .order("date", { ascending: true })
-    .limit(50);
+  const { data: trendData, error } = await supabase
+    .from("daily_crawl_trends")
+    .select("date, words, articles")
+    .order("date", { ascending: false })
+    .limit(7);
 
-  const dateMap = new Map<string, { date: string; articles: number; words: number }>();
-  (trendData || []).forEach((item) => {
-    const d = item.date;
-    const existing = dateMap.get(d) || { date: d, articles: 0, words: 0 };
-    existing.words += item.frequency || 0;
-    existing.articles = Math.max(existing.articles, item.article_count || 0);
-    dateMap.set(d, existing);
-  });
-  const trendHistory = Array.from(dateMap.values()).slice(-7);
+  if (error) {
+    throw error;
+  }
+
+  const trendHistory = (trendData || [])
+    .map((item) => ({
+      date: item.date,
+      articles: Number(item.articles),
+      words: Number(item.words),
+    }))
+    .reverse();
 
   const latestRunStatus = recentRuns[0]?.status || "operational";
 
@@ -122,12 +124,12 @@ export default async function OverviewPage() {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-base font-bold text-white flex items-center gap-2">
-                  <span>Volume Berita Harian</span>
+                  <span>Tren jumlah artikel dan frekuensi kata per hari</span>
                 </h3>
-                <p className="text-xs text-slate-400">Tren artikel terkumpul per hari</p>
+                <p className="text-xs text-slate-400">Tren artikel dan kata terkumpul per hari</p>
               </div>
             </div>
-            <TrendChart data={trendHistory} />
+            <TrendChart2 data={trendHistory} />
           </div>
 
           {/* Top Keywords Frequency */}
