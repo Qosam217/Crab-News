@@ -22,8 +22,12 @@ uv run python -m crab_news.cli --all-sources
 # Menjalankan crawler untuk 1 sumber spesifik (misal: antara)
 uv run python -m crab_news.cli --source antara
 
+# Menjalankan crawler dengan filter rentang waktu spesifik (pagination index)
+uv run python -m crab_news.cli --source cnn-indonesia --from-date 2026-10-15 --to-date 2026-10-18 --limit 50
+
 # Mode Dry-Run (crawling tanpa menyimpan ke database)
 uv run python -m crab_news.cli --source kompas --dry-run
+
 
 # Memproses ulang artikel pending / retry failed
 uv run python -m crab_news.cli --process-pending

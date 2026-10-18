@@ -2,12 +2,20 @@ name: Crab News Crawler Runner
 
 on:
   schedule:
-    # Runs daily at 00:00 UTC (03:00 WIB)
+    # Runs daily at 20:00 UTC (03:00 WIB) - Specifically for Antara News
     - cron: '0 20 * * *'
   workflow_dispatch:
     inputs:
       source_slug:
-        description: 'Specific source slug to crawl (leave blank for all sources)'
+        description: 'Source slug to crawl (e.g. antara, cnn-indonesia, detik, kompas, tempo, or all)'
+        required: false
+        default: 'antara'
+      from_date:
+        description: 'Start date for date range crawl (YYYY-MM-DD)'
+        required: false
+        default: ''
+      to_date:
+        description: 'End date for date range crawl (YYYY-MM-DD)'
         required: false
         default: ''
       limit:
@@ -51,15 +59,28 @@ jobs:
           LOG_LEVEL: INFO
         run: |
           cd crawler
-          ARGS="--all-sources"
-          if [ -n "${{ github.event.inputs.source_slug }}" ]; then
-            ARGS="--source ${{ github.event.inputs.source_slug }}"
-          fi
-          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
-            ARGS="$ARGS --dry-run"
-          fi
-          if [ -n "${{ github.event.inputs.limit }}" ]; then
-            ARGS="$ARGS --limit ${{ github.event.inputs.limit }}"
+          
+          # Daily scheduled runs strictly crawl Antara News only
+          ARGS="--source antara"
+
+          # If manually triggered via workflow_dispatch, allow custom inputs
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            if [ -n "${{ github.event.inputs.source_slug }}" ]; then
+              if [ "${{ github.event.inputs.source_slug }}" = "all" ]; then
+                ARGS="--all-sources"
+              else
+                ARGS="--source ${{ github.event.inputs.source_slug }}"
+              fi
+            fi
+            if [ -n "${{ github.event.inputs.from_date }}" ] && [ -n "${{ github.event.inputs.to_date }}" ]; then
+              ARGS="$ARGS --from-date ${{ github.event.inputs.from_date }} --to-date ${{ github.event.inputs.to_date }}"
+            fi
+            if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+              ARGS="$ARGS --dry-run"
+            fi
+            if [ -n "${{ github.event.inputs.limit }}" ]; then
+              ARGS="$ARGS --limit ${{ github.event.inputs.limit }}"
+            fi
           fi
           
           echo "Running: uv run python -m crab_news.cli $ARGS"

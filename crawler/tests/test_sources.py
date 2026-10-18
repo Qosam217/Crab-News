@@ -140,3 +140,38 @@ def test_kompas_date_extraction_and_filter():
         assert len(results) == 1
         assert results[0]["title"] == "Berita Kompas 1"
         assert results[0]["published_at"].day == 18
+
+
+def test_tempo_rss_fallback_when_blocked():
+    from crab_news.sources.tempo import TempoSource
+    source_model = SourceModel(name="Tempo", slug="tempo", domain="tempo.co", website_url="https://tempo.co", rss_url="https://rss.tempo.co/nasional")
+    adapter = TempoSource(source_model)
+
+    # Simulate fetch_html_page returning None (403 Cloudflare challenge)
+    with patch("crab_news.sources.tempo.fetch_html_page") as mock_fetch, \
+         patch("crab_news.sources.tempo.fetch_and_parse_rss") as mock_rss:
+        mock_fetch.return_value = None
+        mock_rss.return_value = [
+            {
+                "url": "https://nasional.tempo.co/read/1/tempo-berita-1",
+                "title": "Berita Tempo 1",
+                "published_at": datetime(2026, 10, 18, 10, 0, 0, tzinfo=JAKARTA_TZ),
+                "summary": "Ringkasan berita tempo 1",
+            },
+            {
+                "url": "https://nasional.tempo.co/read/2/tempo-berita-lama",
+                "title": "Berita Tempo Lama",
+                "published_at": datetime(2026, 10, 10, 10, 0, 0, tzinfo=JAKARTA_TZ),
+                "summary": "Ringkasan berita tempo lama",
+            },
+        ]
+
+        results = adapter.discover_articles(
+            start_date=date(2026, 10, 18),
+            end_date=date(2026, 10, 18),
+            limit=10,
+        )
+        assert len(results) == 1
+        assert results[0]["title"] == "Berita Tempo 1"
+        assert results[0]["published_at"].day == 18
+
