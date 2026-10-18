@@ -90,23 +90,63 @@ def test_antara_pagination_and_date_filter():
         assert results[0]["title"] == "Berita Terbaru 1"
 
 
-def test_cnn_date_from_url_and_early_stop():
+def test_cnn_date_range_discovery():
     source_model = SourceModel(name="CNN", slug="cnn-indonesia", domain="cnnindonesia.com", website_url="https://cnnindonesia.com")
     adapter = CNNIndonesiaSource(source_model)
 
-    with patch("crab_news.sources.cnn_indonesia.fetch_html_page") as mock_fetch:
-        mock_fetch.return_value = MOCK_CNN_PAGE
-        
+    def fake_fetch(url: str):
+        if "date=2026/10/18" in url and "page=1" in url:
+            return MOCK_CNN_PAGE
+        return ""
+
+    with patch("crab_news.sources.cnn_indonesia.fetch_html_page", side_effect=fake_fetch):
         results = adapter.discover_articles(
             start_date=date(2026, 10, 18),
             end_date=date(2026, 10, 18),
             limit=10,
         )
-        assert len(results) == 1
+        assert len(results) == 2
         assert "Berita CNN 1" in results[0]["title"]
         assert results[0]["published_at"].year == 2026
         assert results[0]["published_at"].month == 10
         assert results[0]["published_at"].day == 18
+
+
+def test_cnn_extract_article_with_metadata_date():
+    source_model = SourceModel(name="CNN", slug="cnn-indonesia", domain="cnnindonesia.com", website_url="https://cnnindonesia.com")
+    adapter = CNNIndonesiaSource(source_model)
+
+    mock_article_html = """
+    <html>
+    <head>
+      <meta name="publishdate" content="2026/10/18 17:30:00">
+    </head>
+    <body>
+      <div class="detail-text">
+        <p>Isi berita Transmart Full Day Sale diskon besar-besaran.</p>
+      </div>
+    </body>
+    </html>
+    """
+    item = {
+        # URL slug looks like 2026-09-04 (draft/planning timestamp)
+        "url": "https://www.cnnindonesia.com/ekonomi/20260904144401-97-1400064/ac-dan-kulkas-lagi-banting-harga",
+        "title": "AC dan Kulkas Lagi Banting Harga",
+        "published_at": None,
+    }
+
+    with patch.object(adapter, "fetch_article_html", return_value=mock_article_html):
+        extracted = adapter.extract_article(item)
+        assert extracted is not None
+        assert extracted.title == "AC dan Kulkas Lagi Banting Harga"
+        # Must extract actual publish date from metadata, NOT draft date from URL
+        assert extracted.published_at is not None
+        assert extracted.published_at.year == 2026
+        assert extracted.published_at.month == 10
+        assert extracted.published_at.day == 18
+        assert extracted.published_at.hour == 17
+        assert extracted.published_at.minute == 30
+        assert "diskon besar-besaran" in extracted.content
 
 
 def test_detik_date_extraction_and_filter():

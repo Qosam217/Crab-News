@@ -1,9 +1,11 @@
 """Indonesian date and timestamp parsing utility."""
 
+import json
 import re
 from datetime import datetime, timedelta
 from typing import Optional
 from zoneinfo import ZoneInfo
+from bs4 import BeautifulSoup
 
 JAKARTA_TZ = ZoneInfo("Asia/Jakarta")
 
@@ -31,20 +33,16 @@ def parse_date_from_url(url: str) -> Optional[datetime]:
     """Attempts to extract publication datetime from known Indonesian news URL patterns.
     
     Supports:
-    - CNN Indonesia: /YYYYMMDDHHMMSS- (e.g. /20261018141338-14-1416721/)
     - Kompas: /read/YYYY/MM/DD/HHMMSS (e.g. /read/2026/10/18/153534278/)
+    - Generic date pattern: /YYYY/MM/DD/
+    
+    Note:
+    - CNN Indonesia / Detik URLs (/YYYYMMDDHHMMSS-) are intentionally excluded because
+      the timestamp in the slug reflects CMS draft / planning creation time rather than
+      the actual publication time.
     """
     if not url:
         return None
-
-    # CNN Indonesia pattern: /YYYYMMDDHHMMSS-
-    cnn_match = re.search(r"/(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})-", url)
-    if cnn_match:
-        try:
-            year, month, day, hour, minute, second = map(int, cnn_match.groups())
-            return datetime(year, month, day, hour, minute, second, tzinfo=JAKARTA_TZ)
-        except ValueError:
-            pass
 
     # Kompas pattern: /read/YYYY/MM/DD/HHMMSS
     kompas_match = re.search(r"/read/(\d{4})/(\d{2})/(\d{2})/(\d{2})(\d{2})(\d{2})?", url)
@@ -79,9 +77,8 @@ def parse_indonesian_date(
     
     Supports:
     - Unix timestamp string: "1792309638"
-    - Relative time: "5 menit lalu", "2 jam yang lalu", "1 hari lalu", "kemarin"
+    - Relative time: "5 menit lalu", "2 jam yang lalu", "1 hari lalu", "2 minggu yang lalu", "kemarin"
     - Absolute format: "Minggu, 18 Okt 2026 14:47 WIB", "18 Oktober 2026", "18/10/2026, 15:35 WIB"
-    - HTML comment timestamp: "<!--2026-10-18 17:36:38-->"
     """
     if not text:
         return None
@@ -100,22 +97,13 @@ def parse_indonesian_date(
         except (ValueError, OverflowError):
             pass
 
-    # 2. Extract HTML comment timestamp if present (e.g. CNN Indonesia <!--2026-10-18 17:36:38-->)
-    comment_match = re.search(r"<!--\s*(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})\s*-->", cleaned)
-    if comment_match:
-        try:
-            dt = datetime.fromisoformat(comment_match.group(1))
-            return dt.replace(tzinfo=JAKARTA_TZ)
-        except ValueError:
-            pass
-
-    # Clean characters
+    # Clean comment tags (e.g. server render timestamps)
     cleaned = re.sub(r"<!--.*?-->", "", cleaned)
     cleaned = cleaned.replace("", "").strip()
 
     lower = cleaned.lower()
 
-    # 3. Relative time expressions
+    # 2. Relative time expressions
     # Menit lalu
     minute_match = re.search(r"(\d+)\s*menit\s*(?:yang\s*)?lalu", lower)
     if minute_match:
@@ -136,6 +124,12 @@ def parse_indonesian_date(
 
     if "kemarin" in lower:
         return ref - timedelta(days=1)
+
+    # Minggu / Pekan lalu
+    week_match = re.search(r"(\d+)\s*(?:minggu|pekan)\s*(?:yang\s*)?lalu", lower)
+    if week_match:
+        weeks = int(week_match.group(1))
+        return ref - timedelta(weeks=weeks)
 
     # Detik lalu
     sec_match = re.search(r"(\d+)\s*detik\s*(?:yang\s*)?lalu", lower)
@@ -201,3 +195,90 @@ def parse_indonesian_date(
         pass
 
     return None
+
+
+def extract_article_metadata_date(html: str) -> Optional[datetime]:
+    """Extracts publication datetime from article HTML meta tags and JSON-LD structured data.
+    
+    Supports:
+    - Detik / CNN specific meta tags: meta[name='publishdate'], meta[name='createdate'], meta[name='dtk:publishdate']
+    - Detik Unix ms meta tag: meta[name='dtk:publishdateunix']
+    - Standard OpenGraph / HTML5: meta[property='article:published_time'], meta[name='pubdate']
+    - Schema.org JSON-LD: script[type='application/ld+json'] (datePublished)
+    - Detail date UI elements: div.detail__date, time, etc.
+    """
+    if not html:
+        return None
+
+    try:
+        soup = BeautifulSoup(html, "html.parser")
+    except Exception:
+        return None
+
+    # 1. Detik / CNN specific text meta tags (e.g. '2026/10/18 17:30:00')
+    for tag_name in ["publishdate", "createdate", "dtk:publishdate"]:
+        tag = soup.find("meta", attrs={"name": tag_name})
+        if tag and tag.get("content"):
+            val = tag["content"].strip()
+            parsed = parse_indonesian_date(val)
+            if parsed:
+                return parsed
+            try:
+                dt = datetime.strptime(val, "%Y/%m/%d %H:%M:%S")
+                return dt.replace(tzinfo=JAKARTA_TZ)
+            except ValueError:
+                pass
+
+    # 2. Unix timestamp meta tag (e.g. Detik dtk:publishdateunix: '1792319400000')
+    unix_tag = soup.find("meta", attrs={"name": "dtk:publishdateunix"})
+    if unix_tag and unix_tag.get("content"):
+        val = unix_tag["content"].strip()
+        if val.isdigit():
+            ts = int(val) / 1000.0 if len(val) >= 13 else int(val)
+            try:
+                return datetime.fromtimestamp(ts, tz=JAKARTA_TZ)
+            except (ValueError, OverflowError):
+                pass
+
+    # 3. Standard OpenGraph / HTML5 article published time
+    for prop in ["article:published_time", "og:published_time", "pubdate"]:
+        tag = soup.find("meta", attrs={"property": prop}) or soup.find("meta", attrs={"name": prop})
+        if tag and tag.get("content"):
+            val = tag["content"].strip()
+            try:
+                iso_dt = datetime.fromisoformat(val.replace("Z", "+00:00"))
+                if iso_dt.tzinfo is None:
+                    return iso_dt.replace(tzinfo=JAKARTA_TZ)
+                return iso_dt.astimezone(JAKARTA_TZ)
+            except (ValueError, TypeError):
+                pass
+
+    # 4. Schema.org JSON-LD datePublished
+    for s in soup.find_all("script", type="application/ld+json"):
+        if s.string:
+            try:
+                data = json.loads(s.string)
+                items = data if isinstance(data, list) else [data]
+                for item in items:
+                    if isinstance(item, dict):
+                        # Support nested @graph
+                        sub_items = item.get("@graph", [item])
+                        for sub in sub_items:
+                            if isinstance(sub, dict) and "datePublished" in sub:
+                                val = str(sub["datePublished"]).strip()
+                                iso_dt = datetime.fromisoformat(val.replace("Z", "+00:00"))
+                                if iso_dt.tzinfo is None:
+                                    return iso_dt.replace(tzinfo=JAKARTA_TZ)
+                                return iso_dt.astimezone(JAKARTA_TZ)
+            except Exception:
+                pass
+
+    # 5. UI elements in page: .detail__date, time
+    date_el = soup.select_one(".detail__date, time, .date")
+    if date_el:
+        parsed = parse_indonesian_date(date_el.get_text(strip=True))
+        if parsed:
+            return parsed
+
+    return None
+

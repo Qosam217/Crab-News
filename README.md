@@ -100,6 +100,12 @@ uv run python -m crab_news.cli --all-sources
 # Jalankan crawler untuk 1 sumber spesifik (misal: antara)
 uv run python -m crab_news.cli --source antara
 
+# Jalankan crawler dengan filter rentang tanggal spesifik (Pagination Index)
+uv run python -m crab_news.cli --source cnn-indonesia --from-date 2026-10-15 --to-date 2026-10-18 --limit 50
+
+# Jalankan crawler untuk seluruh sumber aktif
+uv run python -m crab_news.cli --all-sources
+
 # Mode Dry-Run (tanpa write ke database)
 uv run python -m crab_news.cli --source kompas --dry-run
 
@@ -136,7 +142,12 @@ Untuk mengaktifkan automated crawler harian di GitHub Actions:
 2. Tambahkan Repository Secrets:
    - `SUPABASE_URL`
    - `SUPABASE_SERVICE_ROLE_KEY`
-3. Workflow di [`.github/workflows/crawler.yml`](.github/workflows/crawler.yml) akan otomatis berjalan setiap hari pukul 00:00 UTC (07:00 WIB) atau dapat dipicu secara manual melalui tab **Actions** -> **Run workflow**.
+3. **Jadwal Harian (Daily Auto-Scraping)**:
+   - Workflow di [`.github/workflows/crawler.yml`](.github/workflows/crawler.yml) otomatis berjalan setiap hari pukul 20:00 UTC (03:00 WIB).
+   - **Khusus untuk portal Antara News** (`--source antara`), kemudian dilanjutkan dengan agregasi kata kunci (`--aggregate`).
+4. **Manual Trigger (`workflow_dispatch`)**:
+   - Sumber lain (CNN Indonesia, Detik, Kompas, Tempo) atau pencarian rentang tanggal historis dapat dipicu manual melalui tab **Actions** -> **Run workflow** dengan input parameter `source_slug`, `from_date`, `to_date`, dan `limit`.
+
 
 ---
 
