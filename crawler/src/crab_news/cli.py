@@ -6,6 +6,8 @@ import sys
 import time
 from typing import List, Optional
 from uuid import UUID
+from email.utils import parsedate_to_datetime
+from zoneinfo import ZoneInfo
 
 from .config import settings
 from .database import (
@@ -24,6 +26,7 @@ from .analyzer import compute_daily_keywords
 from .utils.logger import logger
 from .utils.hasher import compute_content_hash
 
+JAKARTA_TZ = ZoneInfo("Asia/Jakarta")
 
 def process_single_article(
     article_repo: ArticleRepository,
@@ -55,12 +58,100 @@ def process_single_article(
             article_repo.update_processing_status(article.id, "failed", str(e))
         return False
 
+def parse_publication_date(item: dict) -> Optional[date]:
+    """Extract the publication date from an RSS candidate."""
+    date_keys = (
+        "published_at",
+        "published",
+        "pubDate",
+        "published_date",
+        "date",
+        "updated",
+    )
+
+    value = next(
+        (item[key] for key in date_keys if item.get(key) is not None),
+        None,
+    )
+
+    if value is None:
+        return None
+
+    try:
+        if isinstance(value, datetime):
+            parsed = value
+        elif isinstance(value, date):
+            return value
+        elif isinstance(value, str):
+            try:
+                parsed = datetime.fromisoformat(
+                    value.replace("Z", "+00:00")
+                )
+            except ValueError:
+                parsed = parsedate_to_datetime(value)
+        elif hasattr(value, "tm_year"):
+            # Support time.struct_time from feedparser.
+            parsed = datetime(
+                value.tm_year,
+                value.tm_mon,
+                value.tm_mday,
+                value.tm_hour,
+                value.tm_min,
+                value.tm_sec,
+            )
+        else:
+            return None
+
+        # Convert timezone-aware timestamps to Indonesian local time.
+        if parsed.tzinfo is not None:
+            parsed = parsed.astimezone(JAKARTA_TZ)
+
+        return parsed.date()
+
+    except (ValueError, TypeError, OverflowError):
+        return None
+
+
+def filter_candidates_by_date(
+    candidates: List[dict],
+    start_date: date,
+    end_date: date,
+    source_name: str,
+) -> List[dict]:
+    """Keep candidates published within the inclusive date range."""
+    filtered = []
+    missing_date_count = 0
+
+    for item in candidates:
+        published_date = parse_publication_date(item)
+
+        if published_date is None:
+            missing_date_count += 1
+            continue
+
+        if start_date <= published_date <= end_date:
+            filtered.append(item)
+
+    logger.info(
+        f"[{source_name}] Date filter {start_date} to {end_date}: "
+        f"{len(filtered)} candidates matched out of {len(candidates)}"
+    )
+
+    if missing_date_count:
+        logger.warning(
+            f"[{source_name}] Skipped {missing_date_count} candidates "
+            "without a recognizable publication date."
+        )
+
+    return filtered
 
 def run_crawler_for_source(
     source: SourceModel,
     limit: int = 30,
     dry_run: bool = False,
     process_after: bool = True,
+    start_date: Optional[date] = None,
+    end_date: Optional[date] = None,
 ) -> CrawlRunModel:
     """Executes discovery, extraction, deduplication, and processing for a single news source."""
     logger.info(f"=== Starting crawl for source: {source.name} ({source.slug}) ===")
@@ -83,9 +174,23 @@ def run_crawler_for_source(
     adapter = get_source_adapter(source)
 
     try:
-        candidates = adapter.discover_articles()
+        candidates = adapter.discover_articles(
+            start_date=start_date,
+            end_date=end_date,
+            limit=limit if limit > 0 else 30,
+        )
         discovered_count = len(candidates)
         logger.info(f"[{source.name}] Discovered {discovered_count} candidate articles from feed/index")
+
+
+        # Apply the date filter before the article limit.
+        if start_date is not None and end_date is not None:
+            candidates = filter_candidates_by_date(
+                candidates=candidates,
+                start_date=start_date,
+                end_date=end_date,
+                source_name=source.name,
+            )
 
         if limit > 0:
             candidates = candidates[:limit]
@@ -142,11 +247,12 @@ def run_crawler_for_source(
                     title=extracted.title,
                     content=extracted.content,
                     author=extracted.author,
-                    published_at=extracted.published_at or datetime.utcnow(),
-                    crawled_at=datetime.utcnow(),
+                    published_at=extracted.published_at or datetime.now(JAKARTA_TZ),
+                    crawled_at=datetime.now(JAKARTA_TZ),
                     content_hash=extracted.content_hash or compute_content_hash(extracted.content),
                     processing_status="pending",
                 )
+
 
                 inserted = article_repo.insert_article(article_data)
                 if inserted:
@@ -185,8 +291,8 @@ def run_crawler_for_source(
     result_model = CrawlRunModel(
         id=run_record.id if run_record else None,
         source_id=source.id,
-        started_at=run_record.started_at if run_record else datetime.utcnow(),
-        finished_at=datetime.utcnow(),
+        started_at=run_record.started_at if run_record else datetime.now(JAKARTA_TZ),
+        finished_at=datetime.now(JAKARTA_TZ),
         status=final_status,  # type: ignore
         discovered_count=discovered_count,
         new_count=new_count,
@@ -195,6 +301,7 @@ def run_crawler_for_source(
         failed_count=failed_count,
         error_summary="; ".join(errors[:5]) if errors else None,
     )
+
 
     if not dry_run and run_record:
         run_repo.update_run(result_model)
@@ -298,12 +405,28 @@ def main():
         help=f"Max articles to extract per source (default: {settings.max_articles_per_source})",
     )
     parser.add_argument(
+        "--from-date",
+        type=date.fromisoformat,
+        metavar="YYYY-MM-DD",
+        help="Include articles published on or after this date",
+    )
+    parser.add_argument(
+        "--to-date",
+        type=date.fromisoformat,
+        metavar="YYYY-MM-DD",
+        help="Include articles published on or before this date",
+    )
+    parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Run discovery & extraction without committing changes to Supabase",
     )
 
     args = parser.parse_args()
+    if (args.from_date is None) != (args.to_date is None):
+        parser.error("--from-date and --to-date must be used together")
+    if (args.from_date is not None and args.from_date > args.to_date):
+        parser.error("--from-date cannot be later than --to-date")
 
     # Check if any action is provided
     if not (args.source or args.all_sources or args.process_pending or args.retry_failed or args.aggregate or args.aggregate_date):
@@ -331,7 +454,7 @@ def main():
             else:
                 sys.exit(1)
 
-        run_crawler_for_source(source, limit=args.limit, dry_run=args.dry_run)
+        run_crawler_for_source(source, limit=args.limit, dry_run=args.dry_run, start_date=args.from_date, end_date=args.to_date,)
 
     # 2. All active sources crawling
     if args.all_sources:
@@ -339,7 +462,7 @@ def main():
         if not active_sources:
             logger.warning("No active sources found in database.")
         for src in active_sources:
-            run_crawler_for_source(src, limit=args.limit, dry_run=args.dry_run)
+            run_crawler_for_source(src, limit=args.limit, dry_run=args.dry_run, start_date=args.from_date, end_date=args.to_date,)
 
     # 3. Process Pending
     if args.process_pending:

@@ -1,7 +1,8 @@
 """Base Source Adapter Interface."""
 
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from datetime import date, datetime
+from typing import List, Optional, Tuple
 import time
 from ..database.models import SourceModel
 from ..extractor.article import ExtractedArticle
@@ -20,12 +21,51 @@ class BaseSource(ABC):
         self.source = source_model
 
     @abstractmethod
-    def discover_articles(self) -> List[dict]:
-        """Discovers candidate articles from RSS feed or index page.
+    def discover_articles(
+        self,
+        start_date: Optional[date] = None,
+        end_date: Optional[date] = None,
+        limit: int = 30,
+    ) -> List[dict]:
+        """Discovers candidate articles from RSS feed or index pagination.
+
+        Args:
+            start_date: If specified, only keep articles published on or after this date.
+            end_date: If specified, only keep articles published on or before this date.
+            limit: Maximum candidate articles to discover.
 
         Returns a list of dicts with at least: {"url": str, "title": str, "published_at": datetime, ...}
         """
         pass
+
+    @staticmethod
+    def check_date_range(
+        published_at: Optional[datetime],
+        start_date: Optional[date],
+        end_date: Optional[date],
+    ) -> Tuple[bool, bool]:
+        """Checks if published_at is within [start_date, end_date].
+
+        Returns:
+            (in_range, is_older_than_start)
+            - in_range: True if within range (or if no range specified)
+            - is_older_than_start: True if published_at is strictly older than start_date
+              (used for early stopping during pagination)
+        """
+        if published_at is None:
+            # If no date known, keep candidate and don't stop pagination early
+            return True, False
+
+        pub_date = published_at.date() if isinstance(published_at, datetime) else published_at
+
+        if start_date and pub_date < start_date:
+            return False, True
+
+        if end_date and pub_date > end_date:
+            return False, False
+
+        return True, False
+
 
     def fetch_article_html(self, url: str) -> Optional[str]:
         """Fetches raw HTML content of an article page."""
