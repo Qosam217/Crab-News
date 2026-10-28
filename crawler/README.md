@@ -20,6 +20,8 @@ Menggunakan arsitektur **Pagination Index Crawler** dengan filter rentang tangga
 
 ---
 
+Note: Untuk scraping by tanggal perlu perbaikan khusus sources Antara, Tempo, dan Kompas.
+
 ## 🚀 Quickstart
 
 ### Menggunakan `uv` (Direkomendasikan)
