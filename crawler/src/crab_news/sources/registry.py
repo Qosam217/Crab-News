@@ -8,6 +8,8 @@ from .cnn_indonesia import CNNIndonesiaSource
 from .kompas import KompasSource
 from .detik import DetikSource
 from .tempo import TempoSource
+from .jawapos import JawaPosSource
+from .idntimes import IDNTimesSource
 from .rss_generic import GenericRSSSource
 
 SOURCE_REGISTRY: Dict[str, Type[BaseSource]] = {
@@ -16,6 +18,8 @@ SOURCE_REGISTRY: Dict[str, Type[BaseSource]] = {
     "kompas": KompasSource,
     "detik": DetikSource,
     "tempo": TempoSource,
+    "jawapos": JawaPosSource,
+    "idntimes": IDNTimesSource,
 }
 
 

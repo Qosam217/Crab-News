@@ -52,6 +52,26 @@ VALUES
         'https://rss.tempo.co/nasional',
         'rss',
         true
+    ),
+    (
+        'a0000000-0000-0000-0000-000000000006',
+        'JawaPos',
+        'jawapos',
+        'jawapos.com',
+        'https://www.jawapos.com',
+        NULL,
+        'html',
+        true
+    ),
+    (
+        'a0000000-0000-0000-0000-000000000007',
+        'IDN Times',
+        'idntimes',
+        'idntimes.com',
+        'https://www.idntimes.com',
+        NULL,
+        'html',
+        true
     )
 ON CONFLICT (slug) DO UPDATE SET
     name = EXCLUDED.name,

@@ -15,7 +15,7 @@ MOCK_ANTARA_PAGE = """
   <div class="post_title">
     <a href="https://www.antaranews.com/berita/1000001/berita-terbaru-1" title="Berita Terbaru 1">Berita Terbaru 1</a>
   </div>
-  <div class="card__post__author-info"><span>10 menit lalu</span></div>
+  <div class="card__post__author-info"><span>18 Oktober 2026</span></div>
 </div>
 <div class="card__post">
   <div class="post_title">

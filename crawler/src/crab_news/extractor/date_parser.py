@@ -14,14 +14,14 @@ MONTH_MAP = {
     "februari": 2, "feb": 2,
     "maret": 3, "mar": 3,
     "april": 4, "apr": 4,
-    "mei": 5,
+    "mei": 5, "may": 5,
     "juni": 6, "jun": 6,
     "juli": 7, "jul": 7,
-    "agustus": 8, "agt": 8, "agu": 8, "agust": 8,
+    "agustus": 8, "agt": 8, "agu": 8, "agust": 8, "aug": 8,
     "september": 9, "sep": 9, "sept": 9,
-    "oktober": 10, "okt": 10,
+    "oktober": 10, "okt": 10, "oct": 10,
     "november": 11, "nov": 11,
-    "desember": 12, "des": 12,
+    "desember": 12, "des": 12, "dec": 12,
 }
 
 INDONESIAN_DAYS = (
