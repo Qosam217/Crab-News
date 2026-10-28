@@ -6,7 +6,7 @@ Menggunakan arsitektur **Pagination Index Crawler** dengan filter rentang tangga
 
 ---
 
-## 📰 Sumber Berita yang Didukung (5 Sources)
+## 📰 Sumber Berita yang Didukung (7 Sources)
 
 | Sumber | Slug | Tipe Penelusuran | URL Indeks / Pagination | Catatan |
 | :--- | :--- | :--- | :--- | :--- |
@@ -15,6 +15,8 @@ Menggunakan arsitektur **Pagination Index Crawler** dengan filter rentang tangga
 | **Detik News** | `detik` | Pagination Indeks | `https://news.detik.com/indeks?page={page}` | Timestamp dari atribut `d-time` / `title` |
 | **Kompas** | `kompas` | Pagination Indeks | `https://news.kompas.com/?source=navbar&page={page}` | Timestamp dari URL pattern `/read/YYYY/MM/DD/...` |
 | **Tempo** | `tempo` | Pagination + Fallback | `https://www.tempo.co/indeks?page={page}` | Dilengkapi otomatis fallback RSS jika diblokir Cloudflare |
+| **Jawa Pos** | `jawapos` | GraphQL API / Index | `https://api.jawapos.com/api-jp-graphql` | Filter rentang tanggal via query GraphQL internal |
+| **IDN Times** | `idntimes` | Per-Date Pagination | `https://www.idntimes.com/index?category=all&date={date}&page={page}` | Penelusuran indeks per tanggal publikasi |
 
 ---
 
